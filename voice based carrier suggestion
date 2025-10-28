@@ -1,0 +1,139 @@
+import speech_recognition as sr
+from gtts import gTTS
+from playsound import playsound
+import tempfile
+import os
+
+def speak(text):
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as fp:
+        temp_path = fp.name
+    tts = gTTS(text=text, lang='en')
+    tts.save(temp_path)
+    playsound(temp_path)
+    os.remove(temp_path)
+
+def get_voice_input():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("🎤 Tell me about your interests:")
+        speak("Hi, I am your voice-based career suggestion assistant. Tell me about your interests, like I love AI, I want to become a doctor, or I enjoy teaching.")
+        
+        try:
+            audio = recognizer.listen(source, timeout=5, phrase_time_limit=10)
+        except sr.WaitTimeoutError:
+            print("⏱️ Listening timed out.")
+            speak("Listening timed out. Please try again.")
+            return ""
+
+    try:
+        text = recognizer.recognize_google(audio)
+        print("📝 You said:", text)
+        return text
+    except sr.UnknownValueError:
+        print("❌ Sorry, I could not understand.")
+        speak("Sorry, I could not understand.")
+        return ""
+    except sr.RequestError:
+        print("❌ Could not connect to the speech recognition service.")
+        speak("Could not connect to the speech recognition service.")
+        return ""
+
+def suggest_career(text):
+    input_text = text.lower()
+
+    career_keywords = {
+        ("ai", "artificial intelligence", "machine learning", "deep learning", "coding", "data science", "python"): (
+            "Artificial Intelligence or Data Science",
+            "AI professionals build smart systems that learn and improve automatically.",
+            "Average salary: 8–30 LPA",
+            "Skills: Python, ML/DL, Data Analysis, Problem Solving"
+        ),
+        ("web", "website", "frontend", "backend", "html", "css", "javascript"): (
+            "Web Development",
+            "Web developers build and maintain websites and web applications.",
+            "Average salary: 4–15 LPA",
+            "Skills: HTML, CSS, JavaScript, React, Backend frameworks"
+        ),
+        ("android", "ios", "mobile", "app development"): (
+            "Mobile App Deppvelopment",
+            "Mobile developers create apps for Android or iOS platforms.",
+            "Average salary: 5–18 LPA",
+            "Skills: Java/Kotlin (Android), Swift (iOS), UI/UX, APIs"
+        ),
+        ("cybersecurity", "hacking", "ethical hacking", "security"): (
+            "Cybersecurity",
+            "Cybersecurity experts protect systems and data from cyber threats.",
+            "Average salary: 6–20 LPA",
+            "Skills: Networking, Ethical Hacking, Linux, Security tools"
+        ),
+        ("design", "ui", "ux", "graphic", "figma", "photoshop"): (
+            "Graphic Design or UI/UX",
+            "Designers create engaging visuals and intuitive digital experiences.",
+            "Average salary: 3–12 LPA",
+            "Skills: Figma, Adobe Suite, Creativity, Typography"
+        ),
+        ("doctor", "medicine", "nurse", "hospital", "healthcare"): (
+            "Healthcare / Medicine",
+            "Healthcare professionals treat patients and improve well-being.",
+            "Average salary: 5–25 LPA (Doctors), ₹2–6 LPA (Nurses)",
+            "Skills: Biology, Patience, Clinical Knowledge, Communication"
+        ),
+        ("teach", "teaching", "education", "teacher", "students"): (
+            "Teaching / Education",
+            "Teachers shape minds and guide learners through knowledge.",
+            "Average salary: 3–10 LPA",
+            "Skills: Communication, Subject Mastery, Patience"
+        ),
+        ("business", "marketing", "sales", "startup", "management"): (
+            "Business, Marketing or Management",
+            "Business professionals grow organizations and drive impact.",
+            "Average salary: 5–25 LPA",
+            "Skills: Communication, Analytics, Leadership, Sales Strategy"
+        ),
+        ("law", "legal", "civil services", "government", "politics"): (
+            "Law / Civil Services",
+            "Lawyers and officers ensure justice, governance, and rights.",
+            "Average salary: 6–30+ LPA",
+            "Skills: Legal knowledge, Critical Thinking, Public Speaking"
+        ),
+        ("psychology", "counseling", "mental health", "therapist", "social work"): (
+            "Psychology / Counseling",
+            "Psychologists help people overcome emotional and mental challenges.",
+            "Average salary: 4–12 LPA",
+            "Skills: Empathy, Listening, Psychology, Therapy techniques"
+        ),
+        ("journalism", "media", "reporting", "news", "writing"): (
+            "Media / Journalism",
+            "Journalists inform the public and document events truthfully.",
+            "Average salary: 3–10 LPA",
+            "Skills: Writing, Speaking, Research, Storytelling"
+        ),
+        ("agriculture", "farming", "climate", "environment", "nature"): (
+            "Agriculture / Environment",
+            "Professionals here focus on sustainability and food systems.",
+            "Average salary: 2–8 LPA",
+            "Skills: Environmental science, Botany, Soil/Water management"
+        )
+    }
+
+    for keywords, (career, desc, salary, skills) in career_keywords.items():
+        if any(keyword in input_text for keyword in keywords):
+            suggestion = f"You might enjoy a career in {career}. {desc} {salary}. Key skills: {skills}."
+            return suggestion
+
+    return (
+        "You have a wide range of interests! "
+        "Consider exploring fields like technology, design, business, arts, healthcare, education, or environment. "
+        "Each of these fields plays a crucial role in society and offers great career opportunities."
+    )
+
+def main():
+    user_input = get_voice_input()
+    if user_input:
+        suggestion = suggest_career(user_input)
+        print("💡 Career Suggestion:", suggestion)
+        speak(suggestion)
+
+# ✅ Corrected this line:
+if __name__ == "__main__":
+    main()
