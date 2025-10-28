@@ -1,0 +1,65 @@
+import pdfplumber
+import spacy
+import re
+import json
+
+# Load spaCy model
+nlp = spacy.load("en_core_web_sm")
+
+# Function to extract text from PDF
+def extract_text_from_pdf(pdf_path):
+    text = ""
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text() + "\n"
+    return text
+
+# Function to extract email, phone, and LinkedIn using regex
+def extract_contact_info(text):
+    email = re.findall(r"\S+@\S+", text)
+    phone = re.findall(r"\+?\d[\d\-\(\) ]{7,}\d", text)
+    linkedin = re.findall(r"https?://www\.linkedin\.com/in/\S+", text)
+    
+    return {
+        "email": email[0] if email else None,
+        "phone": phone[0] if phone else None,
+        "linkedin": linkedin[0] if linkedin else None
+    }
+
+# Function to extract named entities
+def extract_entities(text):
+    doc = nlp(text)
+    education = []
+    names = []
+    for ent in doc.ents:
+        if ent.label_ == "PERSON":
+            names.append(ent.text)
+        elif ent.label_ in ["ORG", "GPE"]:
+            education.append(ent.text)
+    return {
+        "name": names[0] if names else None,
+        "education": list(set(education))
+    }
+
+# Combine everything
+def parse_resume(pdf_path):
+    text = extract_text_from_pdf(pdf_path)
+    contact_info = extract_contact_info(text)
+    entities = extract_entities(text)
+    
+    result = {
+        "name": entities["name"],
+        "email": contact_info["email"],
+        "phone": contact_info["phone"],
+        "linkedin": contact_info["linkedin"],
+        "education": entities["education"],
+        "raw_text": text[:500] + "..."  # Optional: preview of the resume
+    }
+    
+    return result
+
+# Example usage
+if __name__ == "__main__":
+    resume_path = "sample_resume.pdf"
+    parsed_data = parse_resume(resume_path)
+    print(json.dumps(parsed_data, indent=4))
